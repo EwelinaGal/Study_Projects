@@ -1,0 +1,64 @@
+#!/bin/bash
+#Ewelina Gałus
+
+passed=$1 #argument pierwszy ->parametr musi byc plikiem 
+string1=$2
+string2=$3                                                                                                              
+string3=$4                                                                                                              
+if [[ $passed == "" ]]; then #sprawdz czy nie pusty
+        echo "Error: Empty argument. Please provide file name with extension."
+        exit 1
+fi
+
+if [[ -f ${passed} ]]; then #sprawdz czy jest plikiem
+        echo "File Exist"
+else
+       echo "File format is not correct."
+       exit 1
+fi
+
+
+if [[ $# -eq 5 ]]; then #sprawdz czy argumentow nie jest wiecej niz 5 (program, plik, slowo1, slowo2, slowo3)
+        echo "Too many arguments. Only 3 words allowed."
+        exit 1
+fi
+
+echo "Permission: "
+#stat $passed
+
+if [[ -r $passed ]]; then
+       echo "Permission Read"
+fi
+if [[ -w $passed ]]; then
+        echo "Permission Write"
+fi
+if [[ -x $passed ]]; then
+        echo "Permision Execute"
+fi
+
+
+if [[ $string1 == "" ]]; then #jesli pierwszy pusty nie ma argumentow / slow do spr
+       echo "No arguments given. Please try again."
+       exit 1
+fi
+
+echo "To jest program liczacy liczbe wystapien slow: $2 $3 $4."
+
+#grep -o -> linia, w ktorej jest matchi
+#grep -w -> wyszukuje cale slowo, a nie slowo w ktorym dany wyraz jest zawarty
+#wc -l -> zlicza liczbe wyszukanych lini, w ktorych dane slowo wystapilo
+echo "Szukane: $2"
+printf "%s\t" "Liczba wystapien: "
+cat $1 | grep -o -w "$2" | wc -l
+
+if [[ ! $3 == "" ]]; then
+        echo "Szukane: $3"
+        printf "%s\t" "Liczba wystapien: "
+        cat $1 | grep -o -w "$3" | wc -l
+fi
+
+if [[ ! $4 == "" ]]; then
+        echo "Szukane: $4"
+        printf "%s\t" "Liczba wystapien: "
+        cat $1 | grep -o -w "$4" | wc -l
+fi
