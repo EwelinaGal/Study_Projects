@@ -18,34 +18,6 @@
 using namespace std;
 
 
-/*
-void write_from_fifo(int fd)
-{
-    char msg1[100]; //msg1 do 100 znakow
-    
-
-    if (write(fd, msg1, sizeof(msg1)) < 0) // funkcja read z lacza, wiadomosc do 100 znakow, jesli mniejsze od zera, tzn stdin -> odczytaj z lacza
-        perror("read");                          // jesli blad: Bad file descriptor
-    
-    else
-    {
-        printf("msg1 to send: %s \n", msg1);
-    }
-};
-
-void read_from_fifo(int fd)
-{
-    char msg1[10];                           //msg1 do 100 znakow
-    if (read(fd, msg1, sizeof(msg1)) < 0) // funkcja read z lacza
-        perror("read");                         // jesli blad: Bad file descriptor
-    
-    else
-    {
-        printf("msg1 received: %s \n", msg1);
-    }
-};
-*/
-
 int make_open_wrfifo(char const *myfifo)
 {
     mkfifo(myfifo, 0666);
@@ -81,11 +53,11 @@ int main(int argc, char *argv[], char *envp[])
     //int stdin = make_open_wrfifo(stdin);
     //int stdout = make_open_rdfifo(stdout);
 
-    // petla sprawdzajaca lacza
-    int maxfds = (fd1 > fd2) ? fd1 : fd2;
+    
+    
 
     fd_set fds;
-
+    // petla sprawdzajaca lacza
     while (1)
     {
 
@@ -94,7 +66,8 @@ int main(int argc, char *argv[], char *envp[])
         FD_SET(fd2, &fds);
         FD_SET(STDIN_FILENO, &fds);
         FD_SET(STDOUT_FILENO, &fds);
-
+        
+        int maxfds = (fd1 > fd2) ? fd1 : fd2;
         // select() = number of max stdin / fds, fd_set if read, fd_set if write, fd_set except, time)
         select(maxfds + 1, &fds, &fds, NULL, NULL);
         // FD_ISSET sprawdza czy fd jest w zestawie &fds
