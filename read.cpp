@@ -60,7 +60,7 @@ int main(int argc, char *argv[], char *envp[])
         FD_ZERO(&fds); // set do czyszczenia zestawu
         FD_SET(fd1, &fds);
         FD_SET(fd2, &fds);
-        FD_SET(stdin, &fds);
+        FD_SET(STDIN_FILENO, &fds);
         FD_SET(stdout, &fds);
 
         // select() = number of max stdin / fds, fd_set if read, fd_set if write, fd_set except, time)
@@ -70,7 +70,7 @@ int main(int argc, char *argv[], char *envp[])
         if (FD_ISSET(fd1, &fds))
         {
 
-            read(fd1, msg1, strlen(msg1));
+            read(fd1, msg1, sizeof(msg1));
         }
 
         if (FD_ISSET(fd2, &fds))
@@ -78,16 +78,16 @@ int main(int argc, char *argv[], char *envp[])
             read(fd2, msg1, sizeof(msg1));
         }
 
-        if (FD_ISSET(stdin, &fds))
+        if (FD_ISSET(STDIN_FILENO, &fds))
         {
 
-            read(stdin, msg1, strlen(msg1));
+            read(STDIN_FILENO, msg1, sizeof(msg1));
         }
 
-        if (FD_ISSET(stdin, &fds))
+        if (FD_ISSET(STDIN_FILENO, &fds))
         {
 
-            read(stdin, msg1, strlen(msg1));
+            read(STDIN_FILENO, msg1, sizeof(msg1));
         }
     }
 
