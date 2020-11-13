@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+
 //Napisać dwa programy, które komunikują się ze sobą za pomocą łączy:
 
 //Program łącze1 łącze2
@@ -17,38 +18,6 @@
 
 using namespace std;
 
-//Pierwszy parametr przechowuje liczbę argumentów przekazanych w wierszu poleceń, a drugi jest
-//tablicą wskaźników do napisów będących tymi argumentami. Argumenty te mogą być całkowicie
-//dowolnymi napisami.
-//Trzeci argument funkcji main() to wskaźnik na tablicę napisów tworzących środowisko. W przypadku środowiska istnieje wymaganie, aby każdy z napisów miał postać zmienna=wartość.
-
-/*
-void write_from_fifo(int fd)
-{
-    char msg1[100]; //msg1 do 100 znakow
-    
-
-    if (write(fd, msg1, sizeof(msg1)) < 0) // funkcja read z lacza, wiadomosc do 100 znakow, jesli mniejsze od zera, tzn stdin -> odczytaj z lacza
-        perror("read");                          // jesli blad: Bad file descriptor
-    
-    else
-    {
-        printf("msg1 to send: %s \n", msg1);
-    }
-};
-
-void read_from_fifo(int fd)
-{
-    char msg1[10];                           //msg1 do 100 znakow
-    if (read(fd, msg1, sizeof(msg1)) < 0) // funkcja read z lacza
-        perror("read");                         // jesli blad: Bad file descriptor
-    
-    else
-    {
-        printf("msg1 received: %s \n", msg1);
-    }
-};
-*/
 
 int make_open_wrfifo(char const *myfifo)
 {
@@ -74,43 +43,42 @@ int main(int argc, char *argv[], char *envp[])
     printf("Beginning of the program \n");
     printf("PID=%d  RODZIC \n", getpid());
 
-    char msg1[10];
-    cin >> msg1;
+    char msg1[100], msg2[100];
 
     fd_set fds;
-    //int fd = make_open_rdfifo(argv[2]);
-    int fd1 = make_open_rdfifo(argv[1]);
-    //int fd2 = make_open_wrfifo(argv[2]);
 
-    //int stdin = make_open_wrfifo(stdin);
-    //int stdout = make_open_rdfifo(stdout);
+    int fd2 = make_open_rdfifo(argv[1]);
+    int fd1 = make_open_wrfifo(argv[2]);
 
     // petla sprawdzajaca lacza
     while (1)
     {
 
         FD_ZERO(&fds); // set do czyszczenia zestawu
-        FD_SET(fd1, &fds);
+        FD_SET(fd2, &fds);
         FD_SET(STDIN_FILENO, &fds);
 
-        int maxfds = (fd1 > STDIN_FILENO) ? fd1 : STDIN_FILENO;
+        cout << fd1 << fd2 << endl;
+        int maxfds = (fd2 > STDIN_FILENO) ? fd2 : STDIN_FILENO;
         // select() = number of max stdin / fds, fd_set if read, fd_set if write, fd_set except, time)
         select(maxfds + 1, &fds, &fds, NULL, NULL);
         // FD_ISSET sprawdza czy fd jest w zestawie &fds
 
-        if (FD_ISSET(fd1, &fds))
+        if (FD_ISSET(fd2, &fds))
         {
-            read(fd1, msg1, sizeof(msg1));
-            printf("Message received from fd1: %s \n", msg1);
+            read(fd2, msg1, sizeof(msg1));
+            printf("Message received from fd1: %s \n", argv[1]);
         }
 
         if (FD_ISSET(STDIN_FILENO, &fds))
         {
-            write(STDIN_FILENO, msg1, sizeof(msg1));
+            read(STDIN_FILENO, msg1, sizeof(msg1));
             printf("Message received from stdin: %s \n", msg1);
         }
+
+        write(fd1, msg2, strlen(msg1));
     }
+
 
     return 0;
 }
-
