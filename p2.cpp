@@ -16,69 +16,60 @@
 //Wiadomości odczytane z terminala przesyłane są przez łącze do drugiego procesu. Wiadomości odczytane z łącza są wyświetlane na terminalu (standardowe wyjście stdout).
 //Zalecane jest wykorzystanie funkcji select().
 
+//PROGRAM 2
 using namespace std;
 
-
-int make_open_wrfifo(char const *myfifo)
+//funkcja do tworzenia laczy i ich otwarcia
+int make_open_fifo(char const *myfifo)
 {
-    mkfifo(myfifo, 0666);
+    mkfifo(myfifo, 0666); // mkfifo funkcja tworzaca lacze
 
-    int fd = open(myfifo, O_WRONLY);
+    int fd = open(myfifo, O_RDWR); //open funkcja otwierajaca lacze w danym mode_t
 
-    return fd; // zwraca otwarty file descriptor[]
-}
-
-int make_open_rdfifo(char const *myfifo)
-{
-    mkfifo(myfifo, 0666);
-
-    int fd = open(myfifo, O_RDONLY);
-
-    return fd; // zwraca otwarty file descriptor[]
+    return fd;
 }
 
 int main(int argc, char *argv[], char *envp[])
 {
-
-    printf("Beginning of the program \n");
-    printf("PID=%d  RODZIC \n", getpid());
-
-    char msg1[100], msg2[100];
-
-    fd_set fds;
-
-    int fd2 = make_open_rdfifo(argv[1]);
-    int fd1 = make_open_wrfifo(argv[2]);
-
-    // petla sprawdzajaca lacza
+    // lacze1 jako arg1 otwarte do czytania
+    // lacze2 otwarte do pisania --jako argument 2
+    int fdRd = make_open_fifo(argv[1]); //lacze1 -- do czytania
+    int fdWr = make_open_fifo(argv[2]); // lacze2 -- do pisania
+    
     while (1)
     {
+        fd_set fds; // zestaw fds
 
-        FD_ZERO(&fds); // set do czyszczenia zestawu
-        FD_SET(fd2, &fds);
-        FD_SET(STDIN_FILENO, &fds);
+        FD_ZERO(&fds); //zestaw zerujacy
+        FD_SET(STDIN_FILENO, &fds); // umiesc st din w zestawie
+        FD_SET(fdRd, &fds); // umiesc fdrd w zestawie fds
 
-        cout << fd1 << fd2 << endl;
-        int maxfds = (fd2 > STDIN_FILENO) ? fd2 : STDIN_FILENO;
-        // select() = number of max stdin / fds, fd_set if read, fd_set if write, fd_set except, time)
-        select(maxfds + 1, &fds, &fds, NULL, NULL);
-        // FD_ISSET sprawdza czy fd jest w zestawie &fds
-
-        if (FD_ISSET(fd2, &fds))
+        int maxfd = (fdWr > fdRd) ? fdWr : fdRd; // znajdz najwieksza wartosc deskryptora
+        if (select(maxfd + 1, &fds, NULL, NULL, NULL))
         {
-            read(fd2, msg1, sizeof(msg1));
-            printf("Message received from fd1: %s \n", argv[1]);
+            // jestli z lacza stdin
+            if (FD_ISSET(STDIN_FILENO, &fds))
+            {
+                char msg[80];
+                if (read(STDIN_FILENO, msg, sizeof(msg))) //czytaj z stdin
+                {
+                    write(fdWr, msg, strlen(msg) + 1); // pisz do lacza fdwr
+                }
+            }
+            if (FD_ISSET(fdRd, &fds))
+            {
+                char msg[80];
+                if (read(fdRd, msg, sizeof(msg))) //czytaj z lacza fdrd
+                {
+                    printf("Program 1: %s\n", msg); // wyswietl
+                }
+            }
         }
-
-        if (FD_ISSET(STDIN_FILENO, &fds))
-        {
-            read(STDIN_FILENO, msg1, sizeof(msg1));
-            printf("Message received from stdin: %s \n", msg1);
-        }
-
-        write(fd1, msg2, strlen(msg1));
     }
 
+    //zamknij lacza
+    close(fdRd);
+    close(fdWr);
 
     return 0;
 }
