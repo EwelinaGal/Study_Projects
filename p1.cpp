@@ -15,79 +15,61 @@
 //Wiadomości odczytane z terminala przesyłane są przez łącze do drugiego procesu. Wiadomości odczytane z łącza są wyświetlane na terminalu (standardowe wyjście stdout).
 //Zalecane jest wykorzystanie funkcji select().
 
+//PROGRAM 1
 using namespace std;
 
-
-int make_open_wrfifo(char const *myfifo)
+//funkcja do tworzenia laczy i ich otwarcia
+int make_open_fifo(char const *myfifo)
 {
-    mkfifo(myfifo, 0666);
+    mkfifo(myfifo, 0666); // mkfifo funkcja tworzaca lacze
 
-    int fd = open(myfifo, O_WRONLY);
+    int fd = open(myfifo, O_RDWR); //open funkcja otwierajaca lacze w danym mode_t
 
-    return fd; // zwraca otwarty file descriptor[]
+    return fd;
 }
-
-int make_open_rdfifo(char const *myfifo)
-{
-    mkfifo(myfifo, 0666);
-
-    int fd = open(myfifo, O_RDONLY);
-
-    return fd; // zwraca otwarty file descriptor[]
-}
-
-char msg1[100], msg2[100];
 
 int main(int argc, char *argv[], char *envp[])
 {
+    // Program 1 czyta z lacza1 fdrd, jako pierwszy argument
+    // lacze2 do pisania przesyla do drugiego wiadomosc -- argument 2
+    int fdWr = make_open_fifo(argv[2]); // lacze2 -- do pisania
+    int fdRd = make_open_fifo(argv[1]); // lacze1 -- do czytania
 
-    printf("Beginning of the program \n");
-    printf("PID=%d  RODZIC \n", getpid());
-
-    //char msg1[10];
-
-    fd_set fds;
-    int fd1 = make_open_rdfifo(argv[1]);
-    int fd2 = make_open_wrfifo(argv[2]);
-
-    cout << msg1 << endl;
-    cout << "fd2" << fd2 << endl;
-
-    //write(fd, msg1, strlen(msg1));
-
-    // petla sprawdzajaca lacza
     while (1)
     {
+        fd_set fds; //stworz zestaw laczy fds
 
-        FD_ZERO(&fds); // set do czyszczenia zestawu
-        FD_SET(fd1, &fds);
-        FD_SET(STDIN_FILENO, &fds);
+        FD_ZERO(&fds); //zestaw zerujacy lacza
+        FD_SET(STDIN_FILENO, &fds); // umiesc stdin do zestawu
+        FD_SET(fdRd, &fds);// umiesc lacze fdrd  do zestawu
 
-        cout << fd1 << fd2 << endl;
-
-        int maxfds = (fd1 > STDIN_FILENO) ? fd1 : STDIN_FILENO;
-
-        // select() = number of max stdin / fds, fd_set if read, fd_set if write, fd_set except, time)
-        select(maxfds + 1, &fds, &fds, NULL, NULL);
+        int maxfd = (fdWr > fdRd) ? fdWr : fdRd; //wylicz najwiekszy deskryptor lacza
+        if (select(maxfd + 1, &fds, NULL, NULL, NULL)) //sprawdz, ktore lacza sa gotowe do odczytu/zapisu
         {
-            printf("Argument 1: %s \n", msg1);
-            // FD_ISSET sprawdza czy fd jest w zestawie &fds
-            if (FD_ISSET(fd1, &fds))
+            //jesli cos jest na laczu stdin
+            if (FD_ISSET(STDIN_FILENO, &fds)) 
             {
-                read(fd1, msg1, sizeof(msg1));
-                printf("Message received from fd1: %s \n", msg1);
+                char msg[80];
+                if (read(STDIN_FILENO, msg, sizeof(msg))) // czytaj z stdin
+                { 
+                    write(fdWr, msg, strlen(msg) + 1); //pisz do fdWr
+                }
             }
-
-            if (FD_ISSET(STDIN_FILENO, &fds))
+            //jesli cos jest na laczu fdrd
+            if (FD_ISSET(fdRd, &fds))
             {
-                read(STDIN_FILENO, msg1, sizeof(msg1));
-
-                printf("Message received from stdin: %s \n", msg1);
+                char msg[80];
+                if (read(fdRd, msg, sizeof(msg))) // czytaj
+                {
+                    printf("Program 2: %s\n", msg); // wyswietl wiadomosc
+                }
             }
-            
-            write(fd2, msg1, strlen(msg1));
         }
     }
+
+    // zamknij lacza
+    close(fdRd);
+    close(fdWr);
 
     return 0;
 }
